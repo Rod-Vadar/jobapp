@@ -5,6 +5,8 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.template import loader
 
+from app.models import JobPost
+
 job_title = [
     "First Job",
     "Second Job",
@@ -38,7 +40,8 @@ def job_list(request):
     #     list_of_jobs += f"<li><a href='{detail_url}'>{job}</a></li>"
     # list_of_jobs += "</ul>"
     # return HttpResponse(list_of_jobs)
-    context={"job_title_list":job_title}
+    jobs = JobPost.objects.all()
+    context={"jobs":jobs}
     return render(request, "app/index.html", context)
 
 def job_detail(request, id):
@@ -48,7 +51,9 @@ def job_detail(request, id):
             return redirect(reverse('jobs_home'))
         # return_html = f"<h1>{job_title[id]}</h1> <h3>{job_description[id]}</h3>"
         # return HttpResponse(return_html)
-        context={"job_title":job_title[id], "job_description":job_description[id]}
+        # context={"job_title":job_title[id], "job_description":job_description[id]}
+        job = JobPost.objects.get(id=id)
+        context={"job":job}
         return render(request, "app/job_detail.html",context)
     except:
         return HttpResponseNotFound("Not Found")
