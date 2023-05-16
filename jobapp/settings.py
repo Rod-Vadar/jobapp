@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "app.apps.AppConfig",
     "subscribe.apps.SubscribeConfig",
+    "uploadapp.apps.UploadappConfig",
 ]
 
 MIDDLEWARE = [
