@@ -1,0 +1,860 @@
+import React, { useState, useEffect } from 'react'
+import axios from 'axios'
+
+import { getFirestore } from "firebase/firestore";
+import { collection, addDoc } from "firebase/firestore"
+import { doc, setDoc } from "firebase/firestore";
+
+import { useAuth } from '../../../contexts/AuthContext'
+import { useNavigate, Link as Nav } from 'react-router-dom'
+import Container from '@mui/material/Container'
+import Typography from '@mui/material/Typography';
+import Link from '@mui/material/Link';
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+// import { createTheme, ThemeProvider } from '@mui/material/styles';
+import Button from '@mui/material/Button'
+import Box from '@mui/material/Box'
+import ImageList from '@mui/material/ImageList'
+import ImageListItem from '@mui/material/ImageListItem'
+import ImageListItemBar from '@mui/material/ImageListItemBar';
+import Stack from '@mui/material/Stack'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import EmailIcon from '@mui/icons-material/Email';
+import LockIcon from '@mui/icons-material/Lock';
+import { getAuth } from "firebase/auth";
+
+
+
+
+const Register = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const { register } = useAuth()
+    const navigate = useNavigate()
+    const [disableButton, setDisableButton] = useState(false)
+    const [emailValid, setEmailValid] = useState(false)
+    const emailregexp = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    const nameregexp = /^[A-Za-z]{2,30}$/
+    const [firstNameValid, setFirstNameValid] = useState(false)
+    const [lastNameValid, setLastNameValid] = useState(false)
+
+
+    const [countryCode, setCountryCode] = useState('')
+    const [countryName, setCountryName] = useState('')
+    const [city, setCity] = useState('')
+    const [postal, setPostal] = useState('')
+    const [latitude, setLatitude] = useState('')
+    const [longitude, setLongitude] = useState('')
+
+    const [ip, setIP] = useState('')
+
+
+    const getData = async () => {
+        try {
+            const res = await axios.get('https://geolocation-db.com/json/')
+            setCountryCode(res.data.country_code)
+            setCountryName(res.data.country_name)
+            setCity(res.data.city)
+            setPostal(res.data.postal)
+            setLatitude(res.data.latitude)
+            setLongitude(res.data.longitude)
+            setIP(res.data.IPv4)
+        } catch (error) {
+            console.log(error)
+            return 'Error' + error
+        }
+
+    }
+
+    useEffect(() => {
+        //passing getData method to the lifecycle method
+        getData()
+
+    }, [])
+
+
+
+    const db = getFirestore()
+
+    const firstNameInput = (event) => {
+        setFirstName(event.target.value)
+        const valid = nameregexp.test(event.target.value)
+        setFirstNameValid(valid)
+    }
+
+    const lastNameInput = (event) => {
+        setLastName(event.target.value)
+        const valid = nameregexp.test(event.target.value)
+        setLastNameValid(valid)
+    }
+
+
+    const emailInput = (event) => {
+        setEmail(event.target.value)
+        const valid = emailregexp.test(event.target.value)
+        setEmailValid(valid)
+        console.log(emailValid)
+        emailValidation()
+    }
+    const emailValidation = () => {
+        if (email.length > 40) {
+            setDisableButton(true)
+        } else {
+            setDisableButton(false)
+        }
+    }
+
+    const passwordInput = (event) => {
+        setPassword(event.target.value)
+    }
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        console.log('pressed')
+        try {
+            await register(data.get('email'), data.get('password'));
+            const auth = getAuth();
+            const user = auth.currentUser;
+            if (user) {
+                try {
+                    const docRef = await setDoc(doc(db, "users", user.uid), {
+                        email: data.get('email'),
+                        first: data.get('firstName'),
+                        last: data.get('lastName'),
+                        uid: user.uid,
+                        countryCode: countryCode,
+                        countryName: countryName,
+                        city: city,
+                        postal: postal,
+                        latitude: latitude,
+                        longitude: longitude,
+                        ip: ip,
+                        photo: '',
+                        photoblank: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'
+                    });
+                    console.log("Document written with ID: ", docRef.id);
+                } catch (e) {
+                    console.error("Error adding document: ", e);
+                }
+            }
+
+            navigate('/')
+        } catch {
+            console.log("failed to register")
+        }
+
+
+    }
+    const style = {
+        mb: 1.5,
+    }
+    const checkboxStyle = {
+        color: '#115293'
+    }
+
+
+    return (
+        <>
+            <Container maxWidth='sm' sx={{ paddingTop: 2 }}>
+                <Typography textAlign='justify' variant='h6' component='h1' sx={{ color: '#d50000' }}>
+                    Simply write your 'postme' code on your letter and post it
+                </Typography>
+                {/* images */}
+                <ImageList cols={2}>
+                    {itemData.map((item) => (
+                        <ImageListItem key={item.img} >
+                            <img
+                                src={`${item.img}`}
+                                srcSet={`${item.img}`}
+                                alt={item.title}
+                                loading="lazy"
+                            />
+                            <ImageListItemBar position="below" title={<Typography textAlign='center' variant='h6' component='h1' sx={{ color: '#fff', background: '#d50000' }}>{item.info}</Typography>} />
+                        </ImageListItem>
+                    ))}
+                </ImageList>
+            </Container>
+            {/* info text */}
+            <Container component='main' maxWidth='xs' sx={{ mt: 2 }}>
+
+
+                <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 3 }}>
+                    <Typography sx={{ color: '#7f7f7f' }}>
+                        REGISTER
+                    </Typography>
+
+                    <Typography sx={{ mb: 1.0 }}>
+                        Create an account
+                    </Typography>
+
+                    {/* first name */}
+                    <Stack direction="row" spacing={1}>
+                        <TextField
+                            variant='outlined'
+                            onChange={event => firstNameInput(event)}
+                            type='text'
+                            color='info'
+                            helperText={!firstNameValid && firstName.length > 0 ? 'Enter 2-30 letters only' : null}
+                            inputMode='text' required
+                            id='firstName'
+                            name='firstName'
+                            label={firstNameValid ? null : 'First Name'}
+                            InputLabelProps={firstNameValid ? { shrink: false } : null}
+                            fullWidth
+                            // autoFocus
+                            sx={{ ...style }}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position='end'>
+                                        {firstNameValid ? <CheckCircleIcon sx={{ ...checkboxStyle }} /> : null}
+                                    </InputAdornment>
+                                )
+                            }}
+                        />
+                        {/* last name */}
+                        <TextField
+                            variant='outlined'
+                            onChange={event => lastNameInput(event)}
+                            helperText={!lastNameValid && lastName.length > 0 ? 'Enter 2-30 letters only' : null}
+                            type='text'
+                            inputMode='text' required
+                            id='lastName'
+                            name='lastName'
+                            label={lastNameValid ? null : 'Last Name'}
+                            InputLabelProps={lastNameValid ? { shrink: false } : null}
+                            fullWidth
+                            sx={{ ...style }}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position='end'>
+                                        {lastNameValid ? <CheckCircleIcon sx={{ ...checkboxStyle }} /> : null}
+                                    </InputAdornment>
+                                )
+                            }}
+                        />
+                    </Stack>
+
+
+                    {/* email */}
+                    <TextField
+                        variant='outlined'
+                        onChange={event => emailInput(event)}
+                        // error={disableButton}
+                        helperText={disableButton ? 'Too many Characters' : ''}
+                        type='text'
+                        inputMode='email' required
+                        id='email'
+                        name='email'
+                        label={emailValid ? null : 'Email Address'}
+                        InputLabelProps={emailValid ? { shrink: false } : null}
+                        autoComplete='email'
+                        // autoFocus
+                        fullWidth
+                        sx={{ ...style }}
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position='end'>
+                                    {emailValid && !disableButton ? <CheckCircleIcon sx={{ ...checkboxStyle }} /> : <EmailIcon />}
+                                </InputAdornment>
+                            )
+                        }}
+                    />
+                    {/* password */}
+                    <TextField
+                        variant='outlined'
+                        onChange={event => passwordInput(event)}
+                        // error={password.length > 0 && password.length < 16 || password.length > 32}
+                        helperText={(password.length > 0 && password.length < 16) || password.length > 32 ? 'Password must be between 16 and 32 characters' : ''}
+                        id='password'
+                        label={password.length >= 16 && password.length <= 32 ? null : 'Password'}
+                        InputLabelProps={password.length >= 16 && password.length <= 32 ? { shrink: false } : null}
+                        name='password'
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position='end'>
+                                    {password.length >= 16 && password.length <= 32 ? <CheckCircleIcon sx={{ ...checkboxStyle }} /> : <LockIcon />}
+                                </InputAdornment>
+                            )
+                        }}
+                        type='password'
+                        required
+                        autoComplete='new-password'
+                        fullWidth
+                        sx={{ ...style }}
+                    />
+                    {/* submit button */}
+                    <Stack alignItems='baseline' justifyContent='space-between' direction='row-reverse' spacing={1}>
+                        <Button
+                            type='submit'
+                            disabled={(!emailValid || !firstNameValid || !lastNameValid)
+                                || (password.length >= 0 && password.length < 16) || password.length > 32}
+                            variant='contained'
+
+                            sx={{ ...style }}
+
+                        >Register</Button>
+
+                        <Typography
+                            variant={'subtitle2'}
+                            color='#7f7f7f'
+                        >
+                            Already registered?{' '}
+                            <Link
+                                component={Nav} to='/signin'
+                                underline='none'
+                                color='primary'
+                            >
+                                Login
+                            </Link>
+                        </Typography>
+                    </Stack>
+                </Box>
+            </Container>
+        </>
+    )
+}
+
+export default Register
+
+const itemData = [
+    {
+        img: 'https://previews.123rf.com/images/sosiukin/sosiukin1712/sosiukin171200566/92496396-hand-of-girl-writing-love-letter-on-valentine-day-handmade-postcard-woman-write-on-postcard-for-14-f.jpg',
+        title: 'Breakfast',
+        info: 'Simple'
+    },
+    {
+        img: 'https://pune365.com/wp-content/uploads/2018/04/35402192_l-696x464.jpg',
+        title: 'Burger',
+        info: 'Convenient'
+    },
+];
+
+const Routing = () => {
+    return (
+        <>
+            <Header />
+            <Routes>
+                <Route path='/' element={<Layout/>}>
+                    {/* public routes */}
+                    <Route path='signin' element={<Signin/>}/>
+                    <Route path ='register' element={<Register/>}/>
+                    <Route path='resetpassword' element={<ResetPassword/>}/>
+                    <Route path='privacypolicy' element={<PrivacyPolicy/>}/>
+
+                    {/* protected routes */}
+                    <Route element={<RequiredAuth/>}>
+                    <Route path='/' element={<Home/>}/>
+                    <Route path='account' element={<Account/>}/>
+                    </Route>
+
+                    {/* catch all */}
+                    <Route path='*' element={<Missing/>}/>
+                </Route>
+            </Routes>
+            <br/>
+            <Footer />
+        </>
+
+    )
+}
+
+export default Routing
+
+const App = () => {
+    return (
+        <ThemeProvider theme={theme}>
+        <BrowserRouter>
+            <AuthProvider>
+                <Routing />
+            </AuthProvider>
+        </BrowserRouter>
+        </ThemeProvider>
+    )
+}
+
+export default App
+export default function ButtonAppBar() {
+  const{currentUser} =useAuth();
+  const [loginregister, setLoginRegister] = useState(true)
+  const navigate = useNavigate()
+  const handleClick=()=>{
+    currentUser ? navigate('/account') : loginregister ? navigate('/signin') : navigate('/register')
+    setLoginRegister(!loginregister)
+  }
+  const handleHome=()=>{
+    navigate('/')
+  }
+  const handleCheckout=()=>{
+    navigate('/')
+  }
+
+  return (
+    <Box sx={{ flexGrow: 1, mb: 10}}>
+      <AppBar position="absolute" >
+        <Toolbar >
+          <IconButton
+            size="large"
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            sx={{ mr: 2 }}
+          >
+            <LocalPostOfficeIcon />
+          </IconButton>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Post without a stamp
+          </Typography>
+          <Button onClick={handleHome} color='inherit'>{currentUser ? 'Home': null}</Button>
+          <Button onClick={handleClick} color="inherit">{currentUser ? 'Account' : loginregister ? 'Login' : 'Register'}</Button>
+          {/* <Button onClick={handleCheckout} variant='outlined' color="inherit"> Basket</Button> */}
+        </Toolbar>
+      </AppBar>
+    </Box>
+  );
+}
+
+export default function Footer() {
+
+
+  const Item = styled(Paper)(({ theme }) => ({
+    ...theme.typography.body2,
+    padding: theme.spacing(1),
+    textAlign: 'center',
+    color: theme.palette.text.secondary,
+  }));
+  return (
+    <Box sx={{flexGrow: 1}}>
+      <Grid container spacing={0.1} sx={{position: isMobile ? 'sticky' : 'fixed', bottom: 1, backgroundColor: '#eeeeee'}}>
+      <Grid item xs={12} md={4}>
+          <Item sx={{elevation: 0}}>
+            <Link component={Nav} to='/privacypolicy' variant='body2'>Privacy Policy</Link>
+          </Item>
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <Item sx={{elevation: 0}}>www.postme.com &reg;{new Date().getFullYear()}</Item>
+        </Grid>        
+        <Grid item xs={12} md={4}>
+          <Item sx={{elevation: 0}}>Terms &amp; conditions</Item>
+        </Grid>
+      </Grid>
+    </Box>
+  );
+}
+
+const Input = styled('input')({
+  display: 'none',
+});
+
+
+  const ProfilePicture = ()=>{
+    const [loading, isLoading]= useState(false)
+
+     
+     const uploadFile = async (event)=>{
+       let imageUuid =uuidv1()
+      const auth = getAuth();
+      const user = auth.currentUser;
+        const file = event.target.files[0];
+        const storage = getStorage();
+        const storageRef = ref(storage, 'users');
+        const userIdRef= ref(storageRef,user.uid);
+        const imageRef= ref(userIdRef,'images');
+        const profilePictureRef =ref(imageRef,imageUuid)
+        isLoading(true)
+        const fileSnapshot = await uploadBytes(profilePictureRef, file).then((snapshot)=>{
+          
+          console.log("File uploaded")
+        });
+        
+
+        const publicImageUrl = await getDownloadURL(profilePictureRef);
+        isLoading(false)
+        console.log(publicImageUrl);
+
+        const db = getFirestore();
+        // const auth = getAuth();
+        // const user = auth.currentUser;
+
+
+         try {
+             //   const docRef = await updateDoc(collection(db, "users",user.uid), {
+             //     timestamp: serverTimestamp(),
+             //     publicImageUrl: publicImageUrl
+             const docRef = doc(db, 'users', user.uid);
+
+
+             // Update the timestamp field with the value from the server
+             const updateTimestamp = await updateDoc(docRef, {
+                 timestamp: serverTimestamp(),
+                 photo: publicImageUrl
+             });
+            
+
+        
+          console.log("Document written with ID: ", docRef.id);
+        } catch (e) {
+          console.error("Error adding document: ", e);
+        }
+
+        
+        
+
+    }
+    
+
+    return(
+<Stack direction="row" alignItems="center" spacing={2}>
+<label htmlFor="icon-button-file">
+  <Input onChange={uploadFile} accept="image/*" id="icon-button-file" type="file" />
+  <IconButton color="primary" aria-label="upload picture" component="span">
+    <Typography variant='h6' component='h1' sx={{color: '#d50000'}} >Image </Typography>
+    <PhotoCamera />
+  </IconButton>
+</label>
+<Typography variant='h6' component='h1' sx={{color: '#d50000'}}>{loading ? 'Image Loading...': ''}</Typography>
+</Stack>
+
+    )
+  }
+
+
+
+
+export default ProfilePicture;
+
+const IPaddress = () => {
+
+    const[ip,setIP]=useState('')
+
+      //creating function to load ip address from the API
+  const getData = async () => {
+    const res = await axios.get('https://geolocation-db.com/json/')
+    console.log(res.data);
+    setIP(res.data.IPv4)
+  }
+  
+  useEffect( () => {
+    //passing getData method to the lifecycle method
+    getData()
+
+  }, [])
+  return (
+    <div>IPaddress {ip}</div>
+  )
+}
+
+export default IPaddress
+
+const bull = (
+    <Box
+      component="span"
+      sx={{ display: 'inline-block', mx: '2px', transform: 'scale(0.8)' }}
+    >
+      •
+    </Box>
+  );
+
+
+const Home = () => {
+    const [basketItems, setBasketItems]=useState([])
+    
+
+
+    return (
+        <>
+            <Typography textAlign='justify' variant='h6' component='h1' sx={{ color: '#d50000' }}>
+                A Postme code is a unique 12 digit code and which you write under the address on your envelope.  It expires after your letter has been posted.
+            </Typography>
+
+            <Typography>
+                Simply select and purchase a Postme code to send your letter today
+            </Typography>
+
+            <Grid container spacing={1}>
+
+                <Grid item xs={12} md={2}>
+                    <Card sx={{ minWidth: 275 }}>
+                        <CardContent>
+                            <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
+                                1 Postme code
+                            </Typography>
+                            <Typography variant="h5" component="div">
+                                £1{bull}99
+                            </Typography>
+                            <Typography sx={{ mb: 1.5 }} color="text.secondary">
+                                Good Value
+                            </Typography>
+                            <Typography variant="body2">
+                                express yourself with a letter.
+                                <br />
+                                {'"someone you love"'}
+                            </Typography>
+                        </CardContent>
+                        <CardActions>
+                            <Button size="small" onClick={()=>setBasketItems([0])}>Add to Basket</Button>
+                        </CardActions>
+                    </Card>
+                </Grid>
+
+                <Grid item xs={12} md={2}>
+                    <Card sx={{ minWidth: 275 }}>
+                        <CardContent>
+                            <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
+                                3 Postme codes
+                            </Typography>
+                            <Typography variant="h5" component="div">
+                                £4{bull}99
+                            </Typography>
+                            <Typography sx={{ mb: 1.5 }} color="text.secondary">
+                                Great Value
+                            </Typography>
+                            <Typography variant="body2">
+                                warm and uplifting thoughts.
+                                <br />
+                                {'"eternal written words"'}
+                            </Typography>
+                        </CardContent>
+                        <CardActions>
+                        <Button size="small" onClick={()=>setBasketItems([1])}>Add to Basket</Button>
+                        </CardActions>
+                    </Card>
+                </Grid>
+
+                <Grid item xs={12} md={2}>
+                    <Card sx={{ minWidth: 275 }}>
+                        <CardContent>
+                            <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
+                                6 Postme codes
+                            </Typography>
+                            <Typography variant="h5" component="div">
+                                £6{bull}99
+                            </Typography>
+                            <Typography sx={{ mb: 1.5 }} color="text.secondary">
+                                Best Value
+                            </Typography>
+                            <Typography variant="body2">
+                                distance will not divide.
+                                <br />
+                                {'"nor time will not decay"'}
+                            </Typography>
+                        </CardContent>
+                        <CardActions>
+                        <Button size="small" onClick={()=>setBasketItems([2])}>Add to Basket</Button>
+                        </CardActions>
+                    </Card>
+                </Grid>
+
+
+                <Grid item xs={12} md={12}>
+                    <Card sx={{ minWidth: 275, mb:20, mt: 5}}>
+                        <CardContent>
+                            <Typography sx={{ fontSize: 20 }} color="#00aaaa" gutterBottom>
+                                Your Basket
+                            </Typography>
+                            <Typography variant="h5" component="div">
+                               {basketItems.length===0 ? '': `£${product[basketItems].price}`} 
+                            </Typography>
+                            <Typography sx={{ mb: 1.5 }} color="text.secondary">
+                                {basketItems.length===0 ? 'Basket is empty' : product[basketItems].name}
+                            </Typography>
+
+                        </CardContent>
+                        <CardActions>
+                            <Button size="small" variant="outlined" color='secondary'>Go to Checkout</Button>
+                            {basketItems.length!==0 ? <Button onClick={()=>setBasketItems([])} variant="outlined" size='small' >Remove Items</Button>:null}
+                        </CardActions>
+                    </Card>
+                </Grid>
+            </Grid>
+
+        </>
+    )
+}
+
+export default Home
+
+const product = [
+    {
+        id: 0,
+        name: '1 Postme Code',
+        price: 1.99,
+    },
+    {
+        id: 1,
+        name: '3 Postme Codes',
+        price: 4.99,
+    },
+    {
+        id: 2,
+        name: '6 Postme Codes',
+        price: 6.99,
+    }
+]
+
+const Account = () => {
+    const { signout } = useAuth()
+    const navigate = useNavigate()
+    const db = getFirestore()
+    const [data, setData] = useState([])
+    const auth = getAuth();
+    const user = auth.currentUser;
+
+
+
+
+
+
+
+    // DO NOT DELETE  CODE GETS DATA ONCE
+    // useEffect(() => {
+    //     const getTheData = async () => {
+    //         try {
+    //             const docRef = doc(db, "users", 'tLpLLZh3UogduS8rjemBLdUG9V93');
+
+    //             const docSnap = await getDoc(docRef)
+    //             setData(docSnap.data())
+    //             console.log("Document data:", docSnap.data());
+    //         }
+
+    //         catch {
+    //             console.log("No such document!");
+    //         }
+    //     };
+    //     getTheData();
+
+    // }, [db])
+
+    useEffect(()=>{
+        const unsub = onSnapshot(doc(db, "users", user.uid), (doc) => {
+            setData(doc.data())
+
+            // console.log("Current data: ", doc.data());
+        });
+    },[db])
+
+
+
+    const handleSignOut = async (event) => {
+        event.preventDefault()
+        try {
+            await signout()
+            navigate('register')
+        } catch {
+            console.log('failed to signout')
+        }
+    }
+
+    return (
+        <>
+
+            <Grid justifyContent="flex-start"
+                container spacing={1}>
+
+                <Grid item xs={12} md={2} >
+                    <Typography>
+                        Welcome to your profile
+                    </Typography>
+
+                    <Card sx={{ minWidth: 275 }} >
+                        <CardContent>
+                            <Grid item xs={6} md={6}>
+
+                                <CardMedia
+                                    component="img"
+                                    width='50'
+                                    image={data.photo==='' ? data.photoblank : data.photo}
+                                    alt="Profile Image"
+                                />
+                                <ProfilePicture></ProfilePicture>
+                                <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
+                                    Logged in as
+                                </Typography>
+
+                            </Grid>
+
+
+                            <Typography sx={{ mb: 1.5 }} color="text.secondary">
+                                {data.first} {data.last}
+                            </Typography>
+                            <Typography variant="body2">
+                               {data.email}
+                            </Typography>
+                        </CardContent>
+                        <CardActions>
+                            <Button size="small" variant="outlined" endIcon={<ExitToAppIcon />} onClick={handleSignOut}>Logout</Button>
+                        </CardActions>
+                    </Card>
+                </Grid>
+            </Grid>
+        </>
+    )
+}
+
+export default Account
+
+const AuthContext = createContext();
+export const useAuth = () => {
+    return (
+        useContext(AuthContext)
+    )
+}
+        // Start of firebase funtions
+export const AuthProvider = ({ children }) => {
+    const [currentUser, setCurrentUser] = useState()
+    const auth = getAuth()
+        //register
+    const register=(email, password)=>{
+        return createUserWithEmailAndPassword(auth, email, password)
+    }
+    const signin=(email, password)=>{
+        return signInWithEmailAndPassword(auth, email, password)
+    }
+        //signOut
+     const signout = ()=>{
+         return signOut(auth)
+     }
+          
+
+
+    useEffect(()=>{
+        const unsubscribe = onAuthStateChanged(auth,(user)=>{
+            setCurrentUser(user)
+        })
+        return unsubscribe
+    },[auth])
+
+    const value = {
+        currentUser,
+        register,
+        signin,
+        signout,
+    }
+    return (
+        <AuthContext.Provider value={value}>
+            {children}
+        </AuthContext.Provider>
+    )
+}
+
+const firebaseConfig = {
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MEESAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID
+};
+
+// Initialize Firebase
+initializeApp(firebaseConfig);
+
+REACT_APP_FIREBASE_API_KEY=AIzayBWilXnmmx3ck6zMtkhBYtGKSes9KhM
+REACT_APP_FIREBASE_AUTH_DOMAIN=post-it-919c.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=post-it-919c
+REACT_APP_FIREBASE_STORAGE_BUCKET=post-it-919c.appspot.com
+REACT_APP_FIREBASE_MEESAGING_SENDER_ID=1828044575
+REACT_APP_FIREBASE_APP_ID=1:18284746575:web:3a39122e986e87ba4b53a

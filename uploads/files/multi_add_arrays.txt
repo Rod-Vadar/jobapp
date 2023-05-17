@@ -1,0 +1,27 @@
+
+package javaapplication1;
+
+import java.util.*;
+
+public class JavaApplication1 {
+
+    
+    public static void main(String[] args) {
+        
+        int[] one = {1, 2, 3, 4, 5};
+        int[] two = {1, 2, 3, 4, 5};
+        
+        ArrayList outcomes = new ArrayList();
+        
+        for(int a = 0; a<one.length; a++){
+            
+            for(int b = 0; b<two.length;b++){
+                
+                outcomes.add(one[a]+two[b]);
+            }
+            
+        }
+        System.out.println(outcomes);
+    }
+    
+}

@@ -13,9 +13,8 @@
                 <button type="submit">Upload</button>
             </form>
             {% if saved_object %}
-                <h2>Upload sucessful: {{saved_object.image.url}}</h2>
-                <h2>Image description: {{saved_object.description}}</h2>
-                <img src="{{saved_object.image.url}}" alt="image" style="max-height:200px">
+                <h2>Upload sucessful: {{saved_object.file.url}}</h2>
+                <h2>File description: {{saved_object.description}}</h2>
             {% endif %}
         </body>
         </html>
